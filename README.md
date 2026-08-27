@@ -17,7 +17,12 @@ flowchart LR
   F --> D
 ```
 
+<details>
+<summary>View the complete Approval and Delivery workflow</summary>
+
 ![Approval and Delivery workflow](docs/screenshots/approval-and-delivery.png)
+
+</details>
 
 Quick start:
 
@@ -38,6 +43,18 @@ PASS permanent failure moved to dead letter
 PASS approval required before delivery
 ```
 
+## Workflow evidence
+
+These close-ups come from the running local n8n instance, not a recreated diagram.
+
+### Human approval gate
+
+![Human approval validation and delivery gate](docs/screenshots/approval-gate.png)
+
+### Bounded retry and dead-letter path
+
+![CRM retries and dead-letter alert path](docs/screenshots/retry-dead-letter.png)
+
 ## The problem
 
 Webhook delivery is easy to demonstrate and difficult to make trustworthy. A retry can duplicate a remote side effect, an approval can race with another approval, and a transient failure can leave an event in an unclear state. This repository provides a small, local system in which those failure modes are deterministic, testable, and recorded.
@@ -55,7 +72,7 @@ The result is effectively-once delivery around a PostgreSQL-to-HTTP boundary. It
 
 ## Boundaries
 
-This is a local reliability lab, not a production deployment. It intentionally has no TLS, reverse proxy, Redis, external CRM, or observability stack. WireMock supplies deterministic CRM responses only. Local demonstration configuration is in `.env.example`; replace it before use outside a disposable local environment.
+This is a local reliability lab, not a production deployment. It intentionally has no TLS, reverse proxy, Redis, external CRM, or observability stack. WireMock supplies deterministic CRM responses only. All published Docker ports bind to `127.0.0.1` by default, so the demo is not exposed to the surrounding LAN. Local demonstration configuration is in `.env.example`; replace it before use outside a disposable local environment.
 
 ## Project structure
 

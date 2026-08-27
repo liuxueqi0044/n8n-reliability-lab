@@ -23,6 +23,12 @@ test('compose configuration is valid and all images are pinned', async () => {
   for (const [service, definition] of Object.entries(config.services)) {
     assert.ok(definition.image && !definition.image.endsWith(':latest'), `${service} must use a pinned image`);
   }
+  for (const service of ['postgres', 'n8n', 'wiremock']) {
+    assert.ok(config.services[service].ports.length > 0, `${service} must publish its local demo port`);
+    for (const port of config.services[service].ports) {
+      assert.equal(port.host_ip, '127.0.0.1', `${service} must bind only to the loopback interface`);
+    }
+  }
   assert.equal(config.services['n8n-runner'].image, 'docker.io/n8nio/runners:2.32.7');
   assert.equal(config.services.n8n.environment.N8N_RUNNERS_BROKER_LISTEN_ADDRESS, '0.0.0.0');
   assert.deepEqual(Object.keys(config.volumes).sort(), ['n8n_data', 'postgres_data']);

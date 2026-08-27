@@ -13,7 +13,7 @@ services:
       LAB_DB_USER: ${LAB_DB_USER:-reliability_app}
       LAB_DB_PASSWORD: ${LAB_DB_PASSWORD:-lab_local_only}
     ports:
-      - "${POSTGRES_HOST_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/bootstrap/000_create_databases.sh:/docker-entrypoint-initdb.d/000_create_databases.sh:ro
@@ -39,7 +39,7 @@ services:
   wiremock:
     image: wiremock/wiremock:3.13.2
     ports:
-      - "${WIREMOCK_HOST_PORT:-8080}:8080"
+      - "127.0.0.1:${WIREMOCK_HOST_PORT:-8080}:8080"
     volumes:
       - ./wiremock/mappings:/home/wiremock/mappings:ro
       - ./wiremock/__files:/home/wiremock/__files:ro
@@ -94,7 +94,7 @@ services:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.32.7}
     environment: *n8n_environment
     ports:
-      - "${N8N_HOST_PORT:-5678}:5678"
+      - "127.0.0.1:${N8N_HOST_PORT:-5678}:5678"
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:

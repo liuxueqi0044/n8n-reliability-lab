@@ -78,16 +78,22 @@ test('public repository files and README first screen are present', async () => 
     assert.equal(await exists(join(root, path)), true, `${path} must exist`);
   }
   const ci = await readFile(join(root, '.github/workflows/ci.yml'), 'utf8');
+  assert.match(ci, /permissions:\s*\n\s+contents: read/);
+  assert.match(ci, /actions\/checkout@v6/);
+  assert.match(ci, /persist-credentials: false/);
+  assert.match(ci, /actions\/setup-node@v6/);
   assert.match(ci, /node-version: 20/);
   assert.match(ci, /npm test/);
   assert.match(ci, /docker compose logs/);
   assert.match(ci, /docker compose down --volumes --remove-orphans/);
 });
 
-test('real approval-and-delivery screenshot is present', async () => {
-  const screenshot = join(root, 'docs/screenshots/approval-and-delivery.png');
-  assert.equal(await exists(screenshot), true, 'workflow screenshot must be committed');
-  assert.ok((await stat(screenshot)).size > 20_000, 'workflow screenshot must not be a placeholder');
-  const header = await readFile(screenshot);
-  assert.deepEqual([...header.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+test('real overview and detail workflow screenshots are present', async () => {
+  for (const name of ['approval-and-delivery.png', 'approval-gate.png', 'retry-dead-letter.png']) {
+    const screenshot = join(root, 'docs/screenshots', name);
+    assert.equal(await exists(screenshot), true, `${name} must be committed`);
+    assert.ok((await stat(screenshot)).size > 20_000, `${name} must not be a placeholder`);
+    const header = await readFile(screenshot);
+    assert.deepEqual([...header.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], `${name} must be PNG`);
+  }
 });
