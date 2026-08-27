@@ -31,6 +31,8 @@ test('compose configuration is valid and all images are pinned', async () => {
   assert.match(credentialTemplate, /"user": "\$\{LAB_DB_USER\}"/);
   assert.match(credentialTemplate, /"password": "\$\{LAB_DB_PASSWORD\}"/);
   assert.doesNotMatch(credentialTemplate, /\$env|lab_local_only|n8n_local_only/);
+  const attributes = await readFile(join(process.cwd(), '.gitattributes'), 'utf8');
+  assert.match(attributes, /^\*.sh text eol=lf$/m, 'shell scripts must be checked out with LF line endings');
 });
 
 test('postgres databases and application roles are isolated', async () => {
