@@ -1,0 +1,8 @@
+{
+  "request": { "method": "POST", "urlPath": "/crm/leads/permanent" },
+  "response": {
+    "status": 503,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "unavailable", "fixture": "permanent" }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_delivery_permanent",
+  "source": "wiremock-permanent",
+  "occurred_at": "2026-08-27T09:00:00Z",
+  "lead": {
+    "name": "Delivery Permanent",
+    "email": "delivery.permanent@fictional.test",
+    "company_size": 10,
+    "message": "A fictional permanent delivery fixture."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "request": { "method": "POST", "urlPath": "/crm/leads/success" },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "created", "fixture": "success" }
+  }
+}

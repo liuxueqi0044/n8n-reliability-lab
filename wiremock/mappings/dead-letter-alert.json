@@ -1,0 +1,8 @@
+{
+  "request": { "method": "POST", "urlPath": "/alerts/dead-letter" },
+  "response": {
+    "status": 202,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "accepted": true, "fixture": "dead-letter-alert" }
+  }
+}

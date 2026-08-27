@@ -30,9 +30,28 @@ test('compose configuration is valid and all images are pinned', async () => {
   assert.match(credentialTemplate, /"database": "\$\{LAB_DB_NAME\}"/);
   assert.match(credentialTemplate, /"user": "\$\{LAB_DB_USER\}"/);
   assert.match(credentialTemplate, /"password": "\$\{LAB_DB_PASSWORD\}"/);
-  assert.doesNotMatch(credentialTemplate, /\$env|lab_local_only|n8n_local_only/);
+  assert.match(credentialTemplate, /"id": "LabOpsCred000001"/);
+  assert.match(credentialTemplate, /"name": "\$\{LAB_OPERATOR_HEADER_NAME\}"/);
+  assert.match(credentialTemplate, /"value": "\$\{LAB_OPERATOR_HEADER_VALUE\}"/);
+  assert.doesNotMatch(credentialTemplate, /\$env|lab_local_only|n8n_local_only|operator_local_only/);
+  assert.equal(config.services.n8n.environment.LAB_OPERATOR_HEADER_NAME, 'x-lab-operator-key');
+  assert.equal(config.services.n8n.environment.LAB_OPERATOR_HEADER_VALUE, 'operator_local_only');
   const attributes = await readFile(join(process.cwd(), '.gitattributes'), 'utf8');
   assert.match(attributes, /^\*.sh text eol=lf$/m, 'shell scripts must be checked out with LF line endings');
+  const mappingDirectory = join(process.cwd(), 'wiremock/mappings');
+  const mappings = Object.fromEntries(await Promise.all((await readdir(mappingDirectory))
+    .filter((name) => name.endsWith('.json'))
+    .map(async (name) => [name, JSON.parse(await readFile(join(mappingDirectory, name), 'utf8'))])));
+  for (const [name, mapping] of Object.entries(mappings)) {
+    assert.equal(mapping.request.method, 'POST', `${name} must only match POST`);
+    assert.equal(mapping.response.headers['Content-Type'], 'application/json', `${name} must return JSON`);
+    assert.ok(mapping.response.jsonBody, `${name} must have a stable JSON response body`);
+  }
+  assert.deepEqual(['crm-transient-1.json', 'crm-transient-2.json', 'crm-transient-3.json'].map((name) => mappings[name].response.status), [500, 429, 201]);
+  assert.deepEqual(['crm-recoverable-1.json', 'crm-recoverable-2.json', 'crm-recoverable-3.json', 'crm-recoverable-4.json'].map((name) => mappings[name].response.status), [503, 503, 503, 201]);
+  assert.equal(mappings['crm-permanent.json'].response.status, 503);
+  assert.equal(mappings['crm-nonretryable.json'].response.status, 400);
+  assert.equal(mappings['dead-letter-alert.json'].response.status, 202);
 });
 
 test('postgres databases and application roles are isolated', async () => {

@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_approval_high_risk",
+  "source": "fictional_security_form",
+  "occurred_at": "2026-08-27T09:00:00Z",
+  "lead": {
+    "name": "Risk Example",
+    "email": "risk@example.test",
+    "company_size": 25,
+    "message": "A fictional compliance review requiring approval."
+  }
+}

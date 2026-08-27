@@ -17,7 +17,7 @@
     { "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [{ "leftValue": "={{ $json.requires_approval }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }], "combinator": "and" } }, "id": "LeadIntakeApproval0001", "name": "Requires Approval?", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [1680, 220] },
     { "parameters": { "respondWith": "json", "responseBody": "={{ { accepted: true, duplicate: false, event_id: $json.event_id, status: 'awaiting_approval', classification: $json.classification, requires_approval: true } }}", "options": { "responseCode": 202, "responseHeaders": { "entries": [{ "name": "Content-Type", "value": "application/json" }] } } }, "id": "LeadIntakeApprovalResponse0001", "name": "Respond 202 Awaiting Approval", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.4, "position": [1920, 120] },
     { "parameters": { "respondWith": "json", "responseBody": "={{ { accepted: true, duplicate: false, event_id: $json.event_id, status: 'processing', classification: $json.classification, requires_approval: false } }}", "options": { "responseCode": 202, "responseHeaders": { "entries": [{ "name": "Content-Type", "value": "application/json" }] } } }, "id": "LeadIntakeProcessingResponse0001", "name": "Respond 202 Processing", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.4, "position": [1920, 320] },
-    { "parameters": {}, "id": "LeadIntakeHandoff0001", "name": "Delivery Handoff - Future Board", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [2160, 320], "notes": "Delivery starts in the Approval and Delivery workflow (future board).\nNo CRM request is made by the intake workflow.", "notesInFlow": true }
+    { "parameters": { "workflowId": { "__rl": true, "value": "ApprovalDeliv001", "mode": "list", "cachedResultName": "Approval and Delivery" }, "options": { "waitForSubWorkflow": true } }, "id": "LeadIntakeHandoff0001", "name": "Start Approval and Delivery - Ordinary Processing", "type": "n8n-nodes-base.executeWorkflow", "typeVersion": 1.1, "position": [2160, 320], "notes": "Delivery starts in the Approval and Delivery workflow (future board).\nOnly ordinary processing events are handed off; no CRM request is made by intake.", "notesInFlow": true }
   ],
   "connections": {
     "Webhook - Lead Intake": { "main": [[{ "node": "Normalize, Validate and Classify", "type": "main", "index": 0 }]] },
@@ -29,6 +29,6 @@
     "Finalize Intake": { "main": [[{ "node": "Final Status Rejected?", "type": "main", "index": 0 }]] },
     "Final Status Rejected?": { "main": [[{ "node": "Respond 422 Validation Errors", "type": "main", "index": 0 }], [{ "node": "Requires Approval?", "type": "main", "index": 0 }]] },
     "Requires Approval?": { "main": [[{ "node": "Respond 202 Awaiting Approval", "type": "main", "index": 0 }], [{ "node": "Respond 202 Processing", "type": "main", "index": 0 }]] },
-    "Respond 202 Processing": { "main": [[{ "node": "Delivery Handoff - Future Board", "type": "main", "index": 0 }]] }
+    "Respond 202 Processing": { "main": [[{ "node": "Start Approval and Delivery - Ordinary Processing", "type": "main", "index": 0 }]] }
   }
 }

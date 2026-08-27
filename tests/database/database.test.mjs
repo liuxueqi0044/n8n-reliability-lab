@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { compose } from '../helpers/runtime.mjs';
+import { waitFor } from '../../scripts/wait-for-stack.mjs';
 import {
   closeDatabase, deleteTestEvents, deleteTestEventsByIds, getApprovalRequest,
   getDatabase, getInboundEvent, getWorkflowRun, waitForDatabase,
@@ -15,6 +16,11 @@ const id = (label) => {
   return eventId;
 };
 const raw = { fixture: 'database-test' };
+
+async function n8nLogCount(pattern) {
+  const { stdout } = await compose('logs', '--no-color', 'n8n');
+  return stdout.match(pattern)?.length ?? 0;
+}
 
 async function claim(eventId, payload = raw) {
   const { rows } = await getDatabase().query('SELECT * FROM claim_inbound_event($1, $2::jsonb)', [eventId, JSON.stringify(payload)]);
@@ -140,11 +146,27 @@ test('finalize_intake rolls back when pending approval insertion cannot succeed'
   assert.equal((await getWorkflowRun(run.workflowName, run.executionId)).outcome, 'running');
 });
 
-test('test data persists through a PostgreSQL service restart and is then precisely removed', async () => {
+test('test data persists through a PostgreSQL outage, n8n reconnects, and the row is precisely removed', async () => {
   const eventId = id('restart'); const claimed = await claim(eventId);
   await closeDatabase();
-  await compose('restart', 'postgres');
+  const failuresBefore = await n8nLogCount(/Postgres pool client error|Database ping failed/g);
+  const recoveriesBefore = await n8nLogCount(/Database connection recovered/g);
+  let outageError;
+  await compose('stop', 'postgres');
+  try {
+    await waitFor('n8n to observe the PostgreSQL outage', async () => (
+      await n8nLogCount(/Postgres pool client error|Database ping failed/g)
+    ) > failuresBefore, { timeoutMs: 5_000, intervalMs: 100 });
+  } catch (error) {
+    outageError = error;
+  } finally {
+    await compose('start', 'postgres');
+  }
+  if (outageError) throw outageError;
   await waitForDatabase({ timeoutMs: 60_000 });
+  await waitFor('n8n to reconnect to PostgreSQL', async () => (
+    await n8nLogCount(/Database connection recovered/g)
+  ) > recoveriesBefore, { timeoutMs: 30_000, intervalMs: 250 });
   assert.equal((await getInboundEvent(eventId)).id, claimed.id);
   await deleteTestEvents([eventId]); eventIds.delete(eventId);
   assert.equal(await getInboundEvent(eventId), null);

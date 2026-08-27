@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_delivery_success",
+  "source": "fictional_delivery_fixture",
+  "occurred_at": "2026-08-27T09:00:00Z",
+  "lead": {
+    "name": "Delivery Success",
+    "email": "delivery.success@fictional.test",
+    "company_size": 10,
+    "message": "A fictional standard delivery fixture."
+  }
+}

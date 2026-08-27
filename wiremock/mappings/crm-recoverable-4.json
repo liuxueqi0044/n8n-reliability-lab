@@ -1,0 +1,10 @@
+{
+  "scenarioName": "crm-recoverable",
+  "requiredScenarioState": "recovered",
+  "request": { "method": "POST", "urlPath": "/crm/leads/recoverable" },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "created", "fixture": "recoverable", "step": 4 }
+  }
+}

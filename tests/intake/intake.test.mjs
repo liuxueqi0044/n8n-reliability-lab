@@ -6,8 +6,9 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import pg from 'pg';
-import test, { after, before, afterEach } from 'node:test';
+import test, { after, before, afterEach, beforeEach } from 'node:test';
 import * as database from '../helpers/database.mjs';
+import { countRequests, resetWireMock } from '../helpers/wiremock.mjs';
 
 const { Pool } = pg;
 const execFile = promisify(execFileCallback);
@@ -80,6 +81,18 @@ async function assertNoDownstream(eventId) {
   assert.equal(result.rows[0].dead_letters, 0);
 }
 
+async function assertDeliveredOnce(eventId) {
+  const row = await waitFor(async () => {
+    const result = await query('select * from inbound_events where event_id = $1', [eventId]);
+    return result.rows[0]?.status === 'delivered' ? result.rows[0] : null;
+  }, { timeoutMs: 30_000 });
+  const attempts = await query(`select attempt_no, http_status, outcome from delivery_attempts da
+    join inbound_events ie on ie.id = da.inbound_event_id where ie.event_id = $1 order by attempt_no`, [eventId]);
+  assert.deepEqual(attempts.rows, [{ attempt_no: 1, http_status: 201, outcome: 'succeeded' }]);
+  assert.equal(await countRequests({ path: '/crm/leads/success', eventId }), 1);
+  return row;
+}
+
 async function uniquePayload(name, eventId = newEventId()) {
   const payload = await fixture(name);
   payload.event_id = eventId;
@@ -92,16 +105,31 @@ before(async () => {
   await dbPool.query('select 1');
 });
 
+beforeEach(async () => {
+  await resetWireMock();
+});
+
 afterEach(async () => {
   // Resolve NULL-event-id records by a test-only marker, then use B's explicit-ID cleanup.
   const markers = [...createdMarkers];
+  const cleanupIds = new Set(createdEventIds);
   if (markers.length) {
     const rows = await query("select id from inbound_events where raw_payload->>'_test_nonce' = any($1::text[])", [markers]);
-    for (const row of rows.rows) await database.deleteTestEventsByIds([row.id]);
+    for (const row of rows.rows) cleanupIds.add(row.id);
   }
+  const terminal = new Set(['delivered', 'rejected', 'awaiting_approval', 'dead_letter']);
+  for (const id of cleanupIds) {
+    await waitFor(async () => {
+      const row = await query('select status from inbound_events where id::text = $1 or event_id = $1', [id]);
+      return row.rows[0] && terminal.has(row.rows[0].status) ? true : null;
+    }, { timeoutMs: 30_000 });
+  }
+  const markerIds = [...cleanupIds].filter((id) => !createdEventIds.has(id));
+  if (markerIds.length) await database.deleteTestEventsByIds(markerIds);
   if (createdEventIds.size) await database.deleteTestEvents([...createdEventIds]);
   createdEventIds.clear();
   createdMarkers.clear();
+  await resetWireMock();
 });
 
 after(async () => {
@@ -138,7 +166,12 @@ test('workflow export has fixed production identity, credential, and no delivery
   assert.match(finalizeNode.parameters.query, /finalize_intake\(/);
   assert.match(finalizeNode.parameters.options.queryReplacement, /Normalize, Validate and Classify/);
   assert.equal(workflow.nodes.some((node) => node.type === 'n8n-nodes-base.httpRequest'), false);
-  assert.match(workflow.nodes.find((node) => node.name === 'Delivery Handoff - Future Board').notes, /No CRM request/);
+  const handoff = workflow.nodes.find((node) => node.type === 'n8n-nodes-base.executeWorkflow');
+  assert.ok(handoff);
+  assert.equal(handoff.typeVersion, 1.1);
+  assert.equal(handoff.parameters.workflowId.__rl, true);
+  assert.equal(handoff.parameters.workflowId.value, 'ApprovalDeliv001');
+  assert.equal(handoff.parameters.workflowId.mode, 'list');
 });
 
 test('standard intake returns 202 processing, normalizes values, and audits one run', async () => {
@@ -154,7 +187,7 @@ test('standard intake returns 202 processing, normalizes values, and audits one 
   assert.deepEqual(row.raw_payload.lead, payload.lead);
   const runs = await waitFor(async () => (await runsFor(payload.event_id)).length === 1 ? runsFor(payload.event_id) : null);
   assert.equal(runs[0].outcome, 'succeeded');
-  await assertNoDownstream(payload.event_id);
+  await assertDeliveredOnce(payload.event_id);
 });
 
 test('sequential duplicate returns 200 and creates one inbound event plus skipped audit', async () => {
@@ -162,11 +195,14 @@ test('sequential duplicate returns 200 and creates one inbound event plus skippe
   assert.equal((await post(payload)).response.status, 202);
   const duplicate = await post({ ...payload, lead: { ...payload.lead, message: 'different duplicate body' } });
   assert.equal(duplicate.response.status, 200);
-  assert.deepEqual(duplicate.body, { accepted: false, duplicate: true, event_id: payload.event_id, status: 'processing' });
+  assert.equal(duplicate.body.accepted, false);
+  assert.equal(duplicate.body.duplicate, true);
+  assert.equal(duplicate.body.event_id, payload.event_id);
+  assert.ok(['processing', 'delivered'].includes(duplicate.body.status));
   assert.equal((await query('select count(*)::int as count from inbound_events where event_id = $1', [payload.event_id])).rows[0].count, 1);
   const runs = await waitFor(async () => { const rows = await runsFor(payload.event_id); return rows.length === 2 ? rows : null; });
   assert.deepEqual(runs.map((run) => run.outcome).sort(), ['skipped', 'succeeded']);
-  await assertNoDownstream(payload.event_id);
+  await assertDeliveredOnce(payload.event_id);
 });
 
 test('twenty concurrent requests claim exactly once', async () => {
@@ -178,7 +214,11 @@ test('twenty concurrent requests claim exactly once', async () => {
   const runs = await waitFor(async () => { const rows = await runsFor(payload.event_id); return rows.length === 20 ? rows : null; });
   assert.equal(runs.filter((run) => run.outcome === 'succeeded').length, 1);
   assert.equal(runs.filter((run) => run.outcome === 'skipped').length, 19);
-  await assertNoDownstream(payload.event_id);
+  for (const result of results.filter(({ response }) => response.status === 200)) {
+    // A concurrent duplicate may observe the atomic claim before intake finalization.
+    assert.ok(['received', 'processing', 'delivered'].includes(result.body.status));
+  }
+  await assertDeliveredOnce(payload.event_id);
 });
 
 test('missing email is rejected with a stable 422 error', async () => {
@@ -288,6 +328,7 @@ test('risk keyword uses word boundaries and legalized remains standard', async (
   assert.equal(body.classification, 'standard');
   assert.equal(body.requires_approval, false);
   assert.equal((await eventRow(payload.event_id)).classification, 'standard');
+  await assertDeliveredOnce(payload.event_id);
 });
 
 test('malformed JSON receives a non-2xx response without business HTML assertions', async () => {
@@ -301,4 +342,5 @@ test('re-running bootstrap leaves one usable production webhook', async () => {
   const { response, body } = await post(payload);
   assert.equal(response.status, 202);
   assert.equal(body.status, 'processing');
+  await assertDeliveredOnce(payload.event_id);
 });

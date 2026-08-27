@@ -1,0 +1,11 @@
+{
+  "scenarioName": "crm-recoverable",
+  "requiredScenarioState": "Started",
+  "newScenarioState": "after-503-1",
+  "request": { "method": "POST", "urlPath": "/crm/leads/recoverable" },
+  "response": {
+    "status": 503,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "retry", "fixture": "recoverable", "step": 1 }
+  }
+}

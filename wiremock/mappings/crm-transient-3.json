@@ -1,0 +1,10 @@
+{
+  "scenarioName": "crm-transient",
+  "requiredScenarioState": "after-429",
+  "request": { "method": "POST", "urlPath": "/crm/leads/transient" },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "created", "fixture": "transient", "step": 3 }
+  }
+}

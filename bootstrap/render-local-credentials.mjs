@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 const [inputPath, outputPath] = process.argv.slice(2);
 if (!inputPath || !outputPath) throw new Error('Usage: node render-local-credentials.mjs <input> <output>');
 
-const allowed = new Set(['LAB_DB_NAME', 'LAB_DB_USER', 'LAB_DB_PASSWORD']);
+const allowed = new Set(['LAB_DB_NAME', 'LAB_DB_USER', 'LAB_DB_PASSWORD', 'LAB_OPERATOR_HEADER_NAME', 'LAB_OPERATOR_HEADER_VALUE']);
 const values = Object.fromEntries([...allowed].map((key) => {
   const value = process.env[key];
   if (!value) throw new Error(`Required credential render variable is missing: ${key}`);

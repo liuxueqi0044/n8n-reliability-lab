@@ -1,0 +1,8 @@
+{
+  "request": { "method": "POST", "urlPath": "/crm/leads/nonretryable" },
+  "response": {
+    "status": 400,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "result": "invalid", "fixture": "nonretryable" }
+  }
+}

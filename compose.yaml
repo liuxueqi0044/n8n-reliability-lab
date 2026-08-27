@@ -77,6 +77,8 @@ services:
       LAB_DB_NAME: ${LAB_DB_NAME:-reliability_lab}
       LAB_DB_USER: ${LAB_DB_USER:-reliability_app}
       LAB_DB_PASSWORD: ${LAB_DB_PASSWORD:-lab_local_only}
+      LAB_OPERATOR_HEADER_NAME: ${LAB_OPERATOR_HEADER_NAME:-x-lab-operator-key}
+      LAB_OPERATOR_HEADER_VALUE: ${LAB_OPERATOR_HEADER_VALUE:-operator_local_only}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./bootstrap:/bootstrap:ro

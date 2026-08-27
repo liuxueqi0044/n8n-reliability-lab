@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_approval_high_value",
+  "source": "fictional_approval_form",
+  "occurred_at": "2026-08-27T09:00:00Z",
+  "lead": {
+    "name": "Approval Example",
+    "email": "approval@example.test",
+    "company_size": 250,
+    "message": "A fictional enterprise lead requiring review."
+  }
+}

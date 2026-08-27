@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_delivery_transient",
+  "source": "wiremock-transient",
+  "occurred_at": "2026-08-27T09:00:00Z",
+  "lead": {
+    "name": "Delivery Transient",
+    "email": "delivery.transient@fictional.test",
+    "company_size": 10,
+    "message": "A fictional transient delivery fixture."
+  }
+}
