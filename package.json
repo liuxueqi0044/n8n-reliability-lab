@@ -9,13 +9,13 @@
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",
     "db:migrate": "docker compose run --rm --no-deps db-migrate",
-    "test:platform": "node --test tests/platform/**/*.test.mjs",
-    "test:database": "node --test tests/database/**/*.test.mjs",
-    "test:intake": "node --test tests/intake/**/*.test.mjs",
-    "test:approval": "node --test tests/approval/**/*.test.mjs",
-    "test:delivery": "node --test tests/delivery/**/*.test.mjs",
-    "test:recovery": "node --test tests/recovery/**/*.test.mjs",
-    "test:artifacts": "node --test tests/artifacts/**/*.test.mjs",
+    "test:platform": "node --test tests/platform/platform.test.mjs",
+    "test:database": "node --test tests/database/database.test.mjs tests/database/operations.test.mjs",
+    "test:intake": "node --test tests/intake/intake.test.mjs",
+    "test:approval": "node --test tests/approval/approval.test.mjs",
+    "test:delivery": "node --test tests/delivery/delivery.test.mjs",
+    "test:recovery": "node --test tests/recovery/recovery.test.mjs",
+    "test:artifacts": "node --test tests/artifacts/artifacts.test.mjs",
     "test": "npm run test:platform && npm run test:database && npm run test:intake && npm run test:approval && npm run test:delivery && npm run test:recovery && npm run test:artifacts"
   },
   "dependencies": {
