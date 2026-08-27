@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_high_risk_placeholder",
+  "source": "fictional_security_form",
+  "occurred_at": "2026-08-26T12:30:00+08:00",
+  "lead": {
+    "name": "Casey Example",
+    "email": "casey@example.test",
+    "company_size": 12,
+    "message": "Our fictional team has a security compliance question."
+  }
+}

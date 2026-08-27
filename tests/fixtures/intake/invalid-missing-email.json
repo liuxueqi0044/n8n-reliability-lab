@@ -1,0 +1,10 @@
+{
+  "event_id": "fixture_missing_email_placeholder",
+  "source": "fictional_web_form",
+  "occurred_at": "2026-08-26T12:45:00Z",
+  "lead": {
+    "name": "Drew Example",
+    "company_size": 20,
+    "message": "This fictional request intentionally omits email."
+  }
+}

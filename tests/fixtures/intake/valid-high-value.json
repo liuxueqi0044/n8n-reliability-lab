@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_high_value_placeholder",
+  "source": "fictional_partner_form",
+  "occurred_at": "2026-08-26T04:00:00Z",
+  "lead": {
+    "name": "Binh Example",
+    "email": "binh@example.test",
+    "company_size": 100,
+    "message": "Please send a fictional enterprise overview."
+  }
+}

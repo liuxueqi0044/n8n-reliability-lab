@@ -1,0 +1,20 @@
+{
+  "name": "n8n-reliability-lab",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "db:migrate": "docker compose run --rm --no-deps db-migrate",
+    "test:platform": "node --test tests/platform/**/*.test.mjs",
+    "test:database": "node --test tests/database/**/*.test.mjs",
+    "test:intake": "node --test tests/intake/**/*.test.mjs",
+    "test": "npm run test:platform && npm run test:database && npm run test:intake"
+  },
+  "dependencies": {
+    "pg": "8.16.3"
+  }
+}

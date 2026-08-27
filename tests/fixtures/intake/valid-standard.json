@@ -1,0 +1,11 @@
+{
+  "event_id": "fixture_standard_placeholder",
+  "source": "fictional_web_form",
+  "occurred_at": "2026-08-26T12:00:00+08:00",
+  "lead": {
+    "name": "Ada Example",
+    "email": "Ada.Example@fictional.test",
+    "company_size": 42,
+    "message": "Interested in a fictional reliability workshop."
+  }
+}

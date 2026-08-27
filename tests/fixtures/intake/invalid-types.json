@@ -1,0 +1,11 @@
+{
+  "event_id": 12345,
+  "source": "fictional_web_form",
+  "occurred_at": "2026-08-26T13:00:00Z",
+  "lead": {
+    "name": "Eli Example",
+    "email": "eli@example.test",
+    "company_size": "120",
+    "message": "This fictional request intentionally uses invalid JSON types."
+  }
+}

@@ -1,0 +1,122 @@
+name: n8n-reliability-lab
+
+services:
+  postgres:
+    image: postgres:16.15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:-postgres_local_only}
+      N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
+      N8N_DB_USER: ${N8N_DB_USER:-n8n}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-n8n_local_only}
+      LAB_DB_NAME: ${LAB_DB_NAME:-reliability_lab}
+      LAB_DB_USER: ${LAB_DB_USER:-reliability_app}
+      LAB_DB_PASSWORD: ${LAB_DB_PASSWORD:-lab_local_only}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/bootstrap/000_create_databases.sh:/docker-entrypoint-initdb.d/000_create_databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  db-migrate:
+    image: ghcr.io/amacneil/dbmate:2.35.0
+    environment:
+      DATABASE_URL: postgres://${LAB_DB_USER:-reliability_app}:${LAB_DB_PASSWORD:-lab_local_only}@postgres:5432/${LAB_DB_NAME:-reliability_lab}?sslmode=disable
+    volumes:
+      - ./database/migrations:/db/migrations:ro
+    working_dir: /db
+    command: ["--migrations-dir", "/db/migrations", "--wait", "--no-dump-schema", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  wiremock:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "${WIREMOCK_HOST_PORT:-8080}:8080"
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+      - ./wiremock/__files:/home/wiremock/__files:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/__admin/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  n8n-initialize:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.32.7}
+    entrypoint: ["/bin/sh", "/bootstrap/initialize-n8n.sh"]
+    environment: &n8n_environment
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-n8n_local_only}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-replace-with-a-random-local-key}
+      N8N_INSTANCE_OWNER_MANAGED_BY_ENV: "true"
+      N8N_INSTANCE_OWNER_EMAIL: ${N8N_INSTANCE_OWNER_EMAIL:-owner@example.local}
+      N8N_INSTANCE_OWNER_FIRST_NAME: ${N8N_INSTANCE_OWNER_FIRST_NAME:-Reliability}
+      N8N_INSTANCE_OWNER_LAST_NAME: ${N8N_INSTANCE_OWNER_LAST_NAME:-Lab}
+      N8N_INSTANCE_OWNER_PASSWORD_HASH: ${N8N_INSTANCE_OWNER_PASSWORD_HASH:-$$2b$$12$$O4ZmEGCEUC8jxdflpPBX0uYrhaZpS70EiWEMzjS7Glkfj1WMLGnC6}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_RUNNERS_MODE: external
+      N8N_RUNNERS_AUTH_TOKEN: local_runner_auth_token_only
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${TZ:-UTC}
+      LAB_DB_NAME: ${LAB_DB_NAME:-reliability_lab}
+      LAB_DB_USER: ${LAB_DB_USER:-reliability_app}
+      LAB_DB_PASSWORD: ${LAB_DB_PASSWORD:-lab_local_only}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./bootstrap:/bootstrap:ro
+      - ./workflows:/workflows:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.32.7}
+    environment: *n8n_environment
+    ports:
+      - "${N8N_HOST_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+      n8n-initialize:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:5678/healthz/readiness"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  n8n-runner:
+    image: docker.io/n8nio/runners:${N8N_VERSION:-2.32.7}
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: local_runner_auth_token_only
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
+    depends_on:
+      n8n:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  n8n_data:
