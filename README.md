@@ -4,6 +4,17 @@ A production-oriented n8n workflow lab demonstrating webhook validation, idempot
 
 Most workflow demos only show the happy path. This repository demonstrates what happens when payloads are invalid, events are duplicated, APIs fail, approval is required, or processing must be safely replayed.
 
+## Need one real workflow stabilized?
+
+I offer a **$250 Workflow Reliability Trial** for one n8n, webhook, or API workflow—or one named failure path—delivered in 48–72 hours after scope, payment, and safe access are confirmed.
+
+- We agree on one concrete risk: duplicates, unsafe retries, silent failure, or a broken recovery path.
+- I implement or harden the smallest complete path needed to address that risk.
+- You receive importable workflow JSON or code, failure-test evidence, and a short operator runbook.
+- No production secrets are required for the trial, and deployment remains under your control.
+
+The $250 trial fee is credited toward a larger follow-on sprint if we both choose to continue. [Describe the workflow and failure mode by email](mailto:xueqi@xueqiliu.com?subject=%24250%20Workflow%20Reliability%20Trial&body=Workflow%20or%20integration%3A%0AObserved%20failure%20or%20risk%3A%0ARelevant%20tools%2FAPIs%3A%0ADesired%20deadline%3A).
+
 ```mermaid
 flowchart LR
   I[Lead Intake webhook] --> P[(PostgreSQL reliability ledger)]
