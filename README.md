@@ -1,19 +1,16 @@
 # n8n Reliability Lab
 
-A production-oriented n8n workflow lab demonstrating webhook validation, idempotency, retries, human approval, PostgreSQL persistence, failure recovery, and automated acceptance tests.
+n8n Reliability Lab prevents duplicate, lost, or silently failed webhook work with durable PostgreSQL state, approval gates, bounded retries, dead-letter recovery, and automated failure testing.
 
-Most workflow demos only show the happy path. This repository demonstrates what happens when payloads are invalid, events are duplicated, APIs fail, approval is required, or processing must be safely replayed.
+Most workflow demos stop at the happy path. This one makes invalid payloads, duplicate events, rate limits, server failures, approval races, exhausted retries, and operator replay deterministic and inspectable.
 
-## Need one real workflow stabilized?
+**What it proves**
 
-I offer a **$250 Workflow Reliability Trial** for one n8n, webhook, or API workflow—or one named failure path—delivered in 48–72 hours after scope, payment, and safe access are confirmed.
-
-- We agree on one concrete risk: duplicates, unsafe retries, silent failure, or a broken recovery path.
-- I implement or harden the smallest complete path needed to address that risk.
-- You receive importable workflow JSON or code, failure-test evidence, and a short operator runbook.
-- No production secrets are required for the trial, and deployment remains under your control.
-
-The $250 trial fee is credited toward a larger follow-on sprint if we both choose to continue. [Describe the workflow and failure mode by email](mailto:xueqi@xueqiliu.com?subject=%24250%20Workflow%20Reliability%20Trial&body=Workflow%20or%20integration%3A%0AObserved%20failure%20or%20risk%3A%0ARelevant%20tools%2FAPIs%3A%0ADesired%20deadline%3A).
+- A repeated event is claimed once instead of triggering duplicate remote work.
+- Only retryable failures retry, and every attempt is persisted.
+- Exhausted work becomes one visible dead-letter record instead of disappearing.
+- Approval and recovery remain explicit operator actions.
+- Acceptance tests exercise the same failure paths operators need to trust.
 
 ```mermaid
 flowchart LR
